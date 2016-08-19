@@ -1,0 +1,15 @@
+{
+   "DBConfig": {
+    "host": "localhost",
+    "user": "root",
+    "password": "root",
+    "database": "core",
+    "serverId": 132,
+    "minInterval": 200,
+    "timezone": "+0000",
+     "logging": false,
+     "define": {
+       "timestamps": false
+     }
+  }
+}
