@@ -170,7 +170,7 @@ const db = require('../sequelizeDB');
             let models = fs.readdirSync(path.join(__dirname,'sequelize','models'))
             models.forEach((item,i)=>{models[i]=models[i].slice(0,models[i].length-3)})
             models.forEach((item)=>{content += ` 
-db.${snakeToCamel(item)} = db.sequelize.import('../models/${snakeToCamel(item)}.model');`
+db.${capitalizeFirstLetter(snakeToCamel(item.slice(0,item.indexOf('.model'))))} = db.sequelize.import('./models/${snakeToCamel(item)}');`
             })
 
         content +=`
@@ -180,12 +180,12 @@ db.${snakeToCamel(item)} = db.sequelize.import('../models/${snakeToCamel(item)}.
         relations.forEach((item)=>{
             if(item.second_type!='PRI') return;
             if(item.first_type=='MUL'){
-            content+= `db.${snakeToCamel(item.table_name)}.belongsTo(${snakeToCamel(item.referenced_table_name)}, {foreignKey: '${item.column_name}'});
-db.${snakeToCamel(item.referenced_table_name)}.hasMany(${snakeToCamel(item.table_name)}, {foreignKey: '${item.referenced_column_name}'});
+            content+= `db.${capitalizeFirstLetter(snakeToCamel(item.table_name))}.belongsTo(db.${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}, {foreignKey: '${item.column_name}'});
+db.${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}.hasMany(db.${capitalizeFirstLetter(snakeToCamel(item.table_name))}, {foreignKey: '${item.referenced_column_name}'});
 `
             }else if(item.first_type=='UNI' || item.first_type=='PRI' ){
-                content+= `db.${snakeToCamel(item.table_name)}.belongsTo(${snakeToCamel(item.referenced_table_name)}, {foreignKey: '${item.column_name}'});
-db.${snakeToCamel(item.referenced_table_name)}.belongsTo(${snakeToCamel(item.table_name)}, {foreignKey: '${item.referenced_column_name}'});
+                content+= `db.${capitalizeFirstLetter(snakeToCamel(item.table_name))}.belongsTo(db.${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}, {foreignKey: '${item.column_name}'});
+db.${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}.belongsTo(db.${capitalizeFirstLetter(snakeToCamel(item.table_name))}, {foreignKey: '${item.referenced_column_name}'});
 `
             }
         });
@@ -215,4 +215,8 @@ function deleteFolderRecursive(path) {
 
 function snakeToCamel(s){
     return s.replace(/(\_\w)/g, function(m){return m[1].toUpperCase();});
+}
+
+function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
 }
