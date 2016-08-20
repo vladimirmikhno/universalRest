@@ -8,15 +8,30 @@ const fs = require('fs')
 
 
 
-generateEnitiesForSequelize();
+if(DBConfig.type='Sequelize'){
+    generateEntitiesForSequelize();
+}else if(DBConfig.type='Sequelize'){
+    generateEntitiesForSQL()
+}
 
+//======================================================================================================================
+//======================================================================================================================
+//======================================================================================================================
+
+function generateEntitiesForSQL(){
+    deleteFolderRecursive(path.join(__dirname,'SQL'));
+    deleteFolderRecursive(path.join(__dirname,'DBdata'));
+    fs.mkdirSync(path.join(__dirname,'SQL'));
+    fs.mkdirSync(path.join(__dirname,'SQL','models'));
+    fs.mkdirSync(path.join(__dirname,'DBdata'));
+};
 
 //======================================================================================================================
 //======================================================================================================================
 //======================================================================================================================
 
 
-function generateEnitiesForSequelize() {
+function generateEntitiesForSequelize() {
 
     deleteFolderRecursive(path.join(__dirname,'sequelize'));
     deleteFolderRecursive(path.join(__dirname,'DBdata'));
@@ -180,12 +195,13 @@ db.${capitalizeFirstLetter(snakeToCamel(item.slice(0,item.indexOf('.model'))))} 
         relations.forEach((item)=>{
             if(item.second_type!='PRI') return;
             if(item.first_type=='MUL'){
-            content+= `db.${capitalizeFirstLetter(snakeToCamel(item.table_name))}.belongsTo(db.${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}, {foreignKey: '${item.column_name}'});
-db.${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}.hasMany(db.${capitalizeFirstLetter(snakeToCamel(item.table_name))}, {foreignKey: '${item.referenced_column_name}'});
+            content+= `db.${capitalizeFirstLetter(snakeToCamel(item.table_name))}.belongsTo(db.${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}, {foreignKey: '${item.column_name}',targetKey: '${item.referenced_column_name}',constraints:false});
+db.${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}.hasMany(db.${capitalizeFirstLetter(snakeToCamel(item.table_name))}, {foreignKey: '${item.column_name}',targetKey: '${item.referenced_column_name}',constraints:false});
 `
-            }else if(item.first_type=='UNI' || item.first_type=='PRI' ){
-                content+= `db.${capitalizeFirstLetter(snakeToCamel(item.table_name))}.belongsTo(db.${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}, {foreignKey: '${item.column_name}'});
-db.${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}.belongsTo(db.${capitalizeFirstLetter(snakeToCamel(item.table_name))}, {foreignKey: '${item.referenced_column_name}'});
+            }
+            else if(item.first_type=='UNI' || item.first_type=='PRI' ){
+                content+= `db.${capitalizeFirstLetter(snakeToCamel(item.table_name))}.belongsTo(db.${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}, {foreignKey: '${item.column_name}',targetKey: '${item.referenced_column_name}',constraints:false});
+db.${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}.hasOne(db.${capitalizeFirstLetter(snakeToCamel(item.table_name))}, {foreignKey: '${item.column_name}',targetKey: '${item.referenced_column_name}',constraints:false});
 `
             }
         });

@@ -1,4 +1,4 @@
-{
+{   "type":"Sequilize",
    "DBConfig": {
     "host": "localhost",
     "user": "root",
