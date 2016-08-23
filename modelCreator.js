@@ -196,13 +196,13 @@ db.${capitalizeFirstLetter(snakeToCamel(item.slice(0,item.indexOf('.model'))))} 
             if(item.second_type!='PRI' || !item.column_name || !item.referenced_column_name) return;
 
             if(item.first_type=='MUL'){
-            content+= `db.${capitalizeFirstLetter(snakeToCamel(item.table_name))}.belongsTo(db.${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}, {foreignKey: '${item.column_name}',targetKey: '${item.referenced_column_name}',constraints:false});
-db.${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}.hasMany(db.${capitalizeFirstLetter(snakeToCamel(item.table_name))}, {foreignKey: '${item.column_name}', constraints:false});
+            content+= `db.${capitalizeFirstLetter(snakeToCamel(item.table_name))}.belongsTo(db.${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}, {foreignKey: '${item.column_name}',targetKey: '${item.referenced_column_name}',constraints:false, as:'${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}'});
+db.${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}.hasMany(db.${capitalizeFirstLetter(snakeToCamel(item.table_name))}, {foreignKey: '${item.column_name}', constraints:false, as:'${capitalizeFirstLetter(snakeToCamel(item.table_name))}'});
 `
             }
             else if(item.first_type=='UNI' || item.first_type=='PRI' ){
-                content+= `db.${capitalizeFirstLetter(snakeToCamel(item.table_name))}.belongsTo(db.${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}, {foreignKey: '${item.column_name}',targetKey: '${item.referenced_column_name}',constraints:false});
-db.${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}.belongsTo(db.${capitalizeFirstLetter(snakeToCamel(item.table_name))}, {foreignKey: '${item.referenced_column_name}',targetKey: '${item.column_name}',constraints:false});
+                content+= `db.${capitalizeFirstLetter(snakeToCamel(item.table_name))}.belongsTo(db.${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}, {foreignKey: '${item.column_name}',targetKey: '${item.referenced_column_name}',constraints:false,as:'${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}'});
+db.${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}.belongsTo(db.${capitalizeFirstLetter(snakeToCamel(item.table_name))}, {foreignKey: '${item.referenced_column_name}',targetKey: '${item.column_name}',constraints:false,as:'${capitalizeFirstLetter(snakeToCamel(item.table_name))}'});
 `
             }
         });
