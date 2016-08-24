@@ -16,8 +16,9 @@ import _ from 'lodash'
 
 function respondWithResult(res, statusCode) {
   statusCode = statusCode || 200;
-  return function(entity) {
+  return function(entity,count) {
     if(entity) {
+      if(entity.count){return res.status(statusCode).json({data:entity.rows,count:entity.count});}
       return res.status(statusCode).json({data:entity});
     }
     return null;
@@ -39,9 +40,9 @@ function patchUpdates(patches) {
 function saveUpdates(updates) {
   return function(entity) {
     return entity.updateAttributes(updates)
-      .then(updated => {
-        return updated;
-      });
+        .then(updated => {
+          return updated;
+        });
   };
 }
 
@@ -49,9 +50,9 @@ function removeEntity(res) {
   return function(entity) {
     if(entity) {
       return entity.destroy()
-        .then(() => {
-          res.status(204).end();
-        });
+          .then(() => {
+            res.status(204).end();
+          });
     }
   };
 }
@@ -76,6 +77,7 @@ function handleError(res, statusCode) {
 // Gets a list of <model>
 export function index(req, res) {
   var selector = {};
+  var method = 'findAll'
 
   if(req.query.include){
     var includeList = req.query.include.slice(1,req.query.include.length -1).split(',');
@@ -85,31 +87,48 @@ export function index(req, res) {
     var whereString = req.query.where.slice(1,req.query.where.length -1);
     generateWhereList(whereString,selector)
   }
-  
+  if(req.query.attributes){
+    var attributestring = req.query.attributes.slice(1,req.query.attributes.length -1);
+    generateAttributesList(attributestring,selector)
+  }
+  if(req.query.agregate){
+    var agregateString = req.query.agregate.slice(1,req.query.agregate.length -1).split(',');
+    generateAgregateList(agregateString,selector,req.params.model);
+  }
+  if(req.query.count){
+    method='findAndCountAll'
+  }
+  if(req.query.limit){
+    selector.limit = +req.query.limit;
+  }
+  if(req.query.offset){
+    selector.offset = +req.query.offset;
+  }
+
   selector.logging = true;
 
-  return db[capitalizeFirstLetter(snakeToCamel(req.params.model))].findAll(selector)
-    .then(respondWithResult(res))
-    .catch(handleError(res))
+  return db[capitalizeFirstLetter(snakeToCamel(req.params.model))][method](selector)
+      .then(respondWithResult(res))
+      .catch(handleError(res))
 }
 
 // Gets a single <model> from the DB
 export function show(req, res) {
   return CompassCopy.find({
-    where: {
-      compass_copy_id: req.params.id
-    }
-  })
-    .then(handleEntityNotFound(res))
-    .then(respondWithResult(res))
-    .catch(handleError(res));
+        where: {
+          compass_copy_id: req.params.id
+        }
+      })
+      .then(handleEntityNotFound(res))
+      .then(respondWithResult(res))
+      .catch(handleError(res));
 }
 
 // Creates a new <model> in the DB
 export function create(req, res) {
   return CompassCopy.create(req.body)
-    .then(respondWithResult(res, 201))
-    .catch(handleError(res));
+      .then(respondWithResult(res, 201))
+      .catch(handleError(res));
 }
 
 // Upserts the given <model> in the DB at the specified ID
@@ -119,12 +138,12 @@ export function upsert(req, res) {
   }
 
   return CompassCopy.upsert(req.body, {
-    where: {
-      compass_copy_id: req.params.id
-    }
-  })
-    .then(respondWithResult(res))
-    .catch(handleError(res));
+        where: {
+          compass_copy_id: req.params.id
+        }
+      })
+      .then(respondWithResult(res))
+      .catch(handleError(res));
 }
 
 // Updates an existing <model> in the DB
@@ -133,29 +152,29 @@ export function patch(req, res) {
     delete req.body.compass_copy_id;
   }
   return CompassCopy.find({
-    where: {
-      compass_copy_id: req.params.id
-    }
-  })
-    .then(handleEntityNotFound(res))
-    .then(saveUpdates(req.body))
-    .then(respondWithResult(res))
-    .catch(handleError(res));
+        where: {
+          compass_copy_id: req.params.id
+        }
+      })
+      .then(handleEntityNotFound(res))
+      .then(saveUpdates(req.body))
+      .then(respondWithResult(res))
+      .catch(handleError(res));
 }
 
 // Deletes a <model> from the DB
 export function destroy(req, res) {
   return CompassCopy.find({
-    where: {
-      compass_copy_id: req.params.id
-    }
-  })
-    .then(handleEntityNotFound(res))
-    .then(removeEntity(res))
-    .catch(handleError(res));
+        where: {
+          compass_copy_id: req.params.id
+        }
+      })
+      .then(handleEntityNotFound(res))
+      .then(removeEntity(res))
+      .catch(handleError(res));
 }
 
-
+//===================================================================================================================
 
 function toUnderscore(){
   return this.replace(/([A-Z])/g, function($1){return "_"+$1.toLowerCase();});
@@ -169,34 +188,35 @@ function capitalizeFirstLetter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
+function parseValue(array){
+  if(array.length==1) return array[0];
+  return array;
+}
 
-
-
-
+//===================================================================================================================
 
 function generateIncludeList(includeList,inputObject){
   var objectWithInclude = inputObject;
 
-   includeList.forEach((item,i)=>{
-     var linkToParent = objectWithInclude;
-     var tables = item.split('.');
+  includeList.forEach((item,i)=>{
+    var linkToParent = objectWithInclude;
+    var tables = item.split('.');
 
-     tables.forEach((tableName,i)=>{
-       var tableName = capitalizeFirstLetter(snakeToCamel(tableName))
-       var linkToModel = db[tableName];
+    tables.forEach((tableName,i)=>{
+      var tableName = capitalizeFirstLetter(snakeToCamel(tableName))
+      var linkToModel = db[tableName];
 
-       if(!linkToParent.include) linkToParent.include=[];
-       if( !_.find(linkToParent.include,({model:linkToModel,as:capitalizeFirstLetter(snakeToCamel(tableName))}))) linkToParent.include.push({model:linkToModel,as:capitalizeFirstLetter(snakeToCamel(tableName))});
-       linkToParent = _.find(linkToParent.include,({model:linkToModel,as:capitalizeFirstLetter(snakeToCamel(tableName))}))
-     })
+      if(!linkToParent.include) linkToParent.include=[];
+      if( !_.find(linkToParent.include,({model:linkToModel}))) linkToParent.include.push({model:linkToModel,as:capitalizeFirstLetter(snakeToCamel(tableName))});
+      linkToParent = _.find(linkToParent.include,({model:linkToModel}))
+    })
 
-   });
+  });
 }
 
 
 function generateWhereList(whereString,inputObject){
   var conditions = [];
-  var tables;
 
   while(whereString){
     let sign;
@@ -214,7 +234,7 @@ function generateWhereList(whereString,inputObject){
     conditions.push({path :conditionArray[0],
       column : column,
       operator : conditionArray[1],
-      value : conditionArray[2],
+      value : conditionArray.slice(2),
       sign: sign
     });
   }
@@ -224,28 +244,83 @@ function generateWhereList(whereString,inputObject){
   var linkToPreviousAnd = {$and:[]}
   inputObject.where= {$or:[linkToPreviousAnd]},
 
-  conditions.forEach((item,i)=>{
-    if(item.path.length) paths.push(item.path.join('.'));
+      conditions.forEach((item,i)=>{
+        if(item.path.length) paths.push(item.path.join('.'));
 
-    let newSelector = {};
-    if(!item.path.length){
-      newSelector[item.column] = {};
-      newSelector[item.column][item.operator]=item.value;
-    }else{
-      let camelPaths = item.path.map(function(item){return capitalizeFirstLetter(snakeToCamel(item))}).join('.')
-      newSelector[`$${camelPaths}.${item.column}$`]={};
-      newSelector[`$${camelPaths}.${item.column}$`][item.operator]=item.value;
-    }
+        let newSelector = {};
+        if(!item.path.length){
+          newSelector[item.column] = {};
+          newSelector[item.column][item.operator]=parseValue(item.value);
+        }else{
+          let camelPaths = item.path.map(function(item){return capitalizeFirstLetter(snakeToCamel(item))}).join('.')
+          newSelector[`$${camelPaths}.${item.column}$`]={};
+          newSelector[`$${camelPaths}.${item.column}$`][item.operator]=parseValue(item.value);
+        }
 
-    if(item.sign=='AND'){
-      linkToPreviousAnd.$and.push(newSelector)
-    }else if(item.sign=='OR'){
-      linkToPreviousAnd = {$and:[]}
-      linkToPreviousAnd.$and.push(newSelector)
-      inputObject.where.$or.push(linkToPreviousAnd)
-    }
+        if(item.sign=='AND'){
+          linkToPreviousAnd.$and.push(newSelector)
+        }else if(item.sign=='OR'){
+          linkToPreviousAnd = {$and:[]}
+          linkToPreviousAnd.$and.push(newSelector)
+          inputObject.where.$or.push(linkToPreviousAnd)
+        }
 
-  });
+      });
 
   generateIncludeList(paths,inputObject)
+}
+
+
+function generateAttributesList(attributeString,inputObject){
+  var tables = attributeString.replace(/\]\,/g,'];').replace(/[\[\]]/g,'').split(';')
+
+  tables.forEach(function(item,i){
+    item = item.split(',')
+    let path = item[0];
+    let columns = item.slice(1);
+    if (!path.trim()){
+      if (!inputObject.attributes) inputObject.attributes  =  [];
+      inputObject.attributes = inputObject.attributes.concat(columns);
+    }else{
+      path = path.split('.');
+      path = path.map(function(item){return capitalizeFirstLetter(snakeToCamel(item))});
+      let linkToIncludedModel = inputObject;
+      path.forEach(function(table,i){
+
+        linkToIncludedModel = _.find(linkToIncludedModel.include,{as :capitalizeFirstLetter(snakeToCamel(table))})
+        if(i ==path.length-1){
+          if (!linkToIncludedModel.attributes) linkToIncludedModel.attributes = [];
+          linkToIncludedModel.attributes = linkToIncludedModel.attributes.concat(columns);
+        }
+      })
+    }
+  });
+}
+
+
+function generateAgregateList(attributeList,selector,modelName){
+  attributeList[0] = attributeList[0].split('.');
+  attributeList[3] = attributeList[3].split('.');
+
+  var column = attributeList[0].pop(),
+      path= attributeList[0].map((item)=>{return capitalizeFirstLetter(snakeToCamel(item))}).join('.'),
+      func   = attributeList[1],
+      alias= attributeList[2],
+      groupColumn = attributeList[3].pop(),
+      groupPath  =  attributeList[3].map((item)=>{return capitalizeFirstLetter(snakeToCamel(item))}).join('.'),
+      attributeFlag = attributeList[4];
+
+
+  selector.attributes = {include:[],exclude:[]}
+
+  if (!path.trim()){
+
+    selector.attributes.include.push([db.sequelize.fn(func, db.sequelize.col(modelName+'.'+column)), alias])
+    if (groupColumn && !groupPath) selector.group= [modelName+'.'+groupColumn]
+
+  }else{
+    selector.attributes.include.push([db.sequelize.fn(func, db.sequelize.col(path+'.'+column)), alias])
+    if(groupColumn) selector.group= [groupPath?groupPath:modelName+'.'+groupColumn]
+  }
+
 }
