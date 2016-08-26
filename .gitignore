@@ -1,4 +1,4 @@
 node_modules
-DBdata/*
+DBdata
 sequelize
 .idea
