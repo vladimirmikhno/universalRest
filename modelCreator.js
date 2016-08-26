@@ -192,17 +192,33 @@ db.${capitalizeFirstLetter(snakeToCamel(item.slice(0,item.indexOf('.model'))))} 
         
 `;
 
-        relations.forEach((item)=>{
-            if(item.second_type!='PRI' || !item.column_name || !item.referenced_column_name) return;
+        relations.forEach((item,i)=>{
+            if(item.second_type!='PRI' || !item.column_name || !item.referenced_column_name || !item.first_type || !item.second_type) {
+                relations[i].skipped=true;
+                return};
+
+            if(relations[i+1] && (relations[i].table_name==relations[i+1].table_name) &&(relations[i].referenced_table_name == relations[i+1].referenced_table_name)
+            || relations[i-1] && !relations[i-1].skipped && (relations[i].table_name==relations[i-1].table_name) &&(relations[i].referenced_table_name == relations[i-1].referenced_table_name)
+            ){var isDuplicated = true;
+              if(relations[i+1] && (relations[i].table_name==relations[i+1].table_name) &&(relations[i].referenced_table_name == relations[i+1].referenced_table_name)){
+                  console.log('++1   ',relations[i].table_name,relations[i+1].table_name,relations[i].referenced_table_name,relations[i+1].referenced_table_name)
+              }
+                if(relations[i-1] && (relations[i].table_name==relations[i-1].table_name) &&(relations[i].referenced_table_name == relations[i-1].referenced_table_name)){
+                    console.log('--1   ',relations[i].table_name,relations[i-1].table_name,relations[i].referenced_table_name,relations[i-1].referenced_table_name)
+                }
+
+            }
+
+
 
             if(item.first_type=='MUL'){
-            content+= `db.${capitalizeFirstLetter(snakeToCamel(item.table_name))}.belongsTo(db.${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}, {foreignKey: '${item.column_name}',targetKey: '${item.referenced_column_name}',constraints:false, as:'${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}'});
-db.${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}.hasMany(db.${capitalizeFirstLetter(snakeToCamel(item.table_name))}, {foreignKey: '${item.column_name}', constraints:false, as:'${capitalizeFirstLetter(snakeToCamel(item.table_name))}'});
+            content+= `db.${capitalizeFirstLetter(snakeToCamel(item.table_name))}.belongsTo(db.${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}, {foreignKey: '${item.column_name}',targetKey: '${item.referenced_column_name}',constraints:false, as:'${isDuplicated?capitalizeFirstLetter(snakeToCamel(item.referenced_table_name)+':'+snakeToCamel(item.column_name)):capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}'});
+db.${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}.hasMany(db.${capitalizeFirstLetter(snakeToCamel(item.table_name))}, {foreignKey: '${item.column_name}', constraints:false, as:'${isDuplicated?capitalizeFirstLetter(snakeToCamel(item.table_name)+':'+snakeToCamel(item.column_name)):capitalizeFirstLetter(snakeToCamel(item.table_name))}'});
 `
             }
             else if(item.first_type=='UNI' || item.first_type=='PRI' ){
-                content+= `db.${capitalizeFirstLetter(snakeToCamel(item.table_name))}.belongsTo(db.${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}, {foreignKey: '${item.column_name}',targetKey: '${item.referenced_column_name}',constraints:false,as:'${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}'});
-db.${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}.belongsTo(db.${capitalizeFirstLetter(snakeToCamel(item.table_name))}, {foreignKey: '${item.referenced_column_name}',targetKey: '${item.column_name}',constraints:false,as:'${capitalizeFirstLetter(snakeToCamel(item.table_name))}'});
+                content+= `db.${capitalizeFirstLetter(snakeToCamel(item.table_name))}.belongsTo(db.${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}, {foreignKey: '${item.column_name}',targetKey: '${item.referenced_column_name}',constraints:false,as:'${isDuplicated?capitalizeFirstLetter(snakeToCamel(item.referenced_table_name)+':'+snakeToCamel(item.column_name)):capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}'});
+db.${capitalizeFirstLetter(snakeToCamel(item.referenced_table_name))}.belongsTo(db.${capitalizeFirstLetter(snakeToCamel(item.table_name))}, {foreignKey: '${item.referenced_column_name}',targetKey: '${item.column_name}',constraints:false,as:'${isDuplicated?capitalizeFirstLetter(snakeToCamel(item.table_name)+':'+snakeToCamel(item.referenced_column_name)):capitalizeFirstLetter(snakeToCamel(item.table_name))}'});
 `
             }
         });

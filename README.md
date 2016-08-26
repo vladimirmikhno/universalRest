@@ -35,3 +35,7 @@ example = rest/compass_navigator_group?&where=[[compass_navigators.name_first,$e
 
 6) limit =<number>
 7) offset = <number>
+
+8) raw =true  . Return rows from SQL answer.
+
+9)  order =[[path.path.column,ASC/DESC],[...]]
