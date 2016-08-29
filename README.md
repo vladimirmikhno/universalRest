@@ -12,30 +12,41 @@ universalApi
 
 Option List : 
 
- 1) include = ['a.b.c','d.e','a.b.d']
- join selected tables to result
-                
- 2 ) where = [['a.b.c',$eq,4]OR['a',$in,3,4,5,6]AND[...]....]
-  Create where statement.
-  You can find  list of operators here : http://docs.sequelizejs.com/en/latest/docs/querying/
-  
-  
- 3) attributes =[['<table_path>',column,column...],[...],...]
+ 1) include = [<table_name>.<table_name>.<table_name>,<table_name>.<table_name>,<table_name>.<table_name>.<table_name>]
  
-    if table  is current , then skip first element in list like : [,a,b,c]
+     Join selected tables to result. Tables in path should be separated by '.', and different paths should be separated by ','.
+     If tables related to other table via two or more fields, then you should  use   <table_name:column_field> instead of <table_name> in path.
+     Path should be started from table,that have relation with <model_name>.
+     
+     
+                
+ 2 ) where = [[<path.to.column>,<operator>,<value>]<LOGIC OPERATOR>[<path.to.column>,<operator>,<value>]<LOGIC OPERATOR>[...]....]
+  
+     Create where statement.
+     <path.to.column> is like path to table, but should be ended with column_name.
+      
+     You can find  list of operators here : http://docs.sequelizejs.com/en/latest/docs/querying/
+     Value should be without any '',"". If you need to use more than one value, then you should send it in 4,5,6.. arguments: [<path.to.column>,<operator>,<value1>,<value2>,<value3>]
+  
+  
+  
+ 3) attributes =[[<table_path>,<column_name_1>,<column_name_2>. . .],[. . .],...].
+    
+    By default all columns will be loaded with each table, if you want to configure your own list of fields, then you should  send list of requered fields.
+    Attributes don't work with agregate parameter.
+    If table  is current , then you should skip first element in list : [,<column_name_1>,<column_name_2>. . .]
  
  4) agregate =  [<path.attribute>,<function>,<alias>,<groupBy.attribute>]
+ 
+    Use agregate function for selected field.
+    
+ 5) order =[[path.path.column,ASC/DESC],[...]]
 
-example = rest/compass_navigator_group?&where=[[compass_navigators.name_first,$eq,Vova]]
-                                       &agregate=[compass_navigators.compass_navigators_id,count,CountOfVovasInEachGroup,compass_group_id]
+ 6) count= true;
+ 7) limit =<number>
+ 8) offset = <number>
+
+ 9) raw =true  .
+    Return rows from SQL answer.
 
 
-
-5) count= true
-
-6) limit =<number>
-7) offset = <number>
-
-8) raw =true  . Return rows from SQL answer.
-
-9)  order =[[path.path.column,ASC/DESC],[...]]

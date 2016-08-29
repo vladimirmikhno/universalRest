@@ -44,14 +44,6 @@ function patchUpdates(patches) {
   };
 }
 
-function saveUpdates(updates) {
-  return function(entity) {
-    return entity.updateAttributes(updates)
-      .then(updated => {
-        return updated;
-      });
-  };
-}
 
 function removeEntity(res) {
   return function(entity) {
@@ -196,24 +188,32 @@ export function patch(req, res) {
   if(req.query.where){
     var whereString = req.query.where.slice(1,req.query.where.length -1);
     var haveNestedWhere=generateWhereList(whereString,selector)
-  }
+  }else{selector.where = {}}
 
-  return db[capitalizeFirstLetter(snakeToCamel(req.params.model))].find(selector)
-    .then(handleEntityNotFound(res))
-    .then(saveUpdates(changes))
+  if((!req.query.empty) &&(!Object.keys(selector.where).length)) return res.status(500).send({message:'where selector can not be empty without "empty" parameter'});
+
+  return db[capitalizeFirstLetter(snakeToCamel(req.params.model))]
+    .update(changes,selector)
     .then(respondWithResult(res))
     .catch(handleError(res));
 }
 
 // Deletes a <model> from the DB
 export function destroy(req, res) {
-  return CompassCopy.find({
-    where: {
-      compass_copy_id: req.params.id
-    }
-  })
-    .then(handleEntityNotFound(res))
-    .then(removeEntity(res))
+
+  var selector = {};
+
+
+  if(req.query.where){
+    var whereString = req.query.where.slice(1,req.query.where.length -1);
+    var haveNestedWhere=generateWhereList(whereString,selector)
+  }else{selector.where = {}}
+
+  if((!req.query.empty) &&(!Object.keys(selector.where).length)) return res.status(500).send({message:'where selector can not be without "empty" parameter'});
+
+  return db[capitalizeFirstLetter(snakeToCamel(req.params.model))]
+    .destroy(selector)
+    .then(respondWithResult(res))
     .catch(handleError(res));
 }
 
