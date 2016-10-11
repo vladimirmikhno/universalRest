@@ -74,6 +74,12 @@ export default function(sequelize, DataTypes) {
                     columns.forEach(function(column){
                         var dataType = getSequelizeDataTypeFromMysqlType(column.column_type)
 
+                        if(!dataType){
+                            console.log('CCCCCCCCCCCC',column.column_type);
+                            return;
+                        }
+
+
                         content +=`
 ${column.column_name}: {
     type: DataTypes.${dataType[0]}${dataType[1]?'('+dataType[1]+(dataType[2]?','+dataType[2]:'')+')':''},
@@ -136,6 +142,8 @@ ${column.extra && column.extra  == 'auto_increment'?'\n    autoIncrement: true,'
                 case 'int':
                     return ['INTEGER']
                 case 'text':
+                    return ['TEXT']
+                case 'longtext':
                     return ['TEXT']
                 case 'tinyint':
                     return ['INTEGER']
